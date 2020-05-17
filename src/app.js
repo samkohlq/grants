@@ -1,11 +1,13 @@
-var express = require("express");
-var path = require("path");
-var cookieParser = require("cookie-parser");
-var logger = require("morgan");
+import cookieParser from "cookie-parser";
+import "core-js";
+import express from "express";
+import logger from "morgan";
+import path from "path";
+import "regenerator-runtime";
+import householdRouter from "./routes/householdRouter";
+import indexRouter from "./routes/index";
 
-var indexRouter = require("./routes/index");
-
-var app = express();
+const app = express();
 
 app.use(logger("dev"));
 app.use(express.json());
@@ -14,5 +16,6 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/", indexRouter);
+app.use("/households", householdRouter);
 
 module.exports = app;

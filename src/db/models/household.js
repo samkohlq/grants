@@ -7,7 +7,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     {}
   );
-  Household.associate = function (models) {
+  Household.associate = (models) => {
     Household.hasMany(models.FamilyMember);
   };
   return Household;

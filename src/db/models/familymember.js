@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     {}
   );
-  FamilyMember.associate = function (models) {
+  FamilyMember.associate = (models) => {
     FamilyMember.belongsTo(models.Household);
   };
   return FamilyMember;
