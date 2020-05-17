@@ -1,6 +1,7 @@
 import { body, validationResult } from "express-validator";
 
 const familyMemberValidationRules = () => {
+  const currentDate = new Date().toISOString();
   return [
     body("HouseholdId").isNumeric(),
     body("name").isLength({ min: 1, max: 120 }),
@@ -9,7 +10,7 @@ const familyMemberValidationRules = () => {
     body("spouseId").optional().isNumeric(),
     body("occupationType").isIn(["Unemployed", "Student", "Employed"]),
     body("annualIncome").isCurrency(),
-    body("birthDate").isISO8601(),
+    body("birthDate").isISO8601().isBefore(currentDate),
   ];
 };
 

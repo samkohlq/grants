@@ -29,7 +29,7 @@ describe("addFamilyMember endpoint validates and adds a family member to househo
         maritalStatus: "Single",
         occupationType: "Unemployed",
         annualIncome: 100000,
-        birthDate: new Date(),
+        birthDate: new Date("2020-05-15 17:01:07.941+08"),
       })
       .set("Accept", "application/json");
     // assert that response contains the housingType of the new household
@@ -50,7 +50,7 @@ describe("addFamilyMember endpoint validates and adds a family member to househo
         maritalStatus: "In relationship with self",
         occupationType: "Unemployed",
         annualIncome: 100000,
-        birthDate: new Date(),
+        birthDate: new Date("2020-05-15 17:01:07.941+08"),
       })
       .set("Accept", "application/json");
     // assert that request did not pass validation
