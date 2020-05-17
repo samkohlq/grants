@@ -27,7 +27,7 @@ describe("createHousehold endpoint validates and creates households", () => {
       .post("/households/createHousehold")
       .send({ housingType: "Underground" })
       .set("Accept", "application/json");
-    // assert that response contains the housingType of the new household
+    // assert that request was validated against
     expect(response.statusCode).toBe(422);
   });
 });
