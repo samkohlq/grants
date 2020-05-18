@@ -2,6 +2,7 @@ import express from "express";
 import {
   createHousehold,
   retrieveAllHouseholds,
+  retrieveHousehold,
 } from "../controllers/householdController";
 import {
   householdValidationRules,
@@ -22,5 +23,8 @@ router.post(
 router.get("/retrieveAllHouseholds", (req, res) =>
   retrieveAllHouseholds(req, res)
 );
+
+// retrieve a household by id
+router.get("/retrieveHousehold", (req, res) => retrieveHousehold(req, res));
 
 export default router;

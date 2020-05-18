@@ -124,26 +124,65 @@ describe("retrieveAllHouseholds endpoint retrieves all households and their resp
       .get("/households/retrieveAllHouseholds")
       .set("Accept", "application/json");
 
-    // assert that householdA contains two family members
     expect(retrieveAllHouseholdsResponse.statusCode).toBe(200);
+    // assert that householdA contains two family members
     expect(retrieveAllHouseholdsResponse.body[0].FamilyMembers.length).toBe(2);
-    expect(retrieveAllHouseholdsResponse.body[0].FamilyMembers[0].name).toBe(
-      householdAFamilyMember1.body.name
-    );
-    expect(retrieveAllHouseholdsResponse.body[0].FamilyMembers[1].name).toBe(
-      householdAFamilyMember2.body.name
-    );
-
     // assert that householdA contains three family members
     expect(retrieveAllHouseholdsResponse.body[1].FamilyMembers.length).toBe(3);
-    expect(retrieveAllHouseholdsResponse.body[1].FamilyMembers[0].name).toBe(
-      householdBFamilyMember1.body.name
-    );
-    expect(retrieveAllHouseholdsResponse.body[1].FamilyMembers[1].name).toBe(
-      householdBFamilyMember2.body.name
-    );
-    expect(retrieveAllHouseholdsResponse.body[1].FamilyMembers[2].name).toBe(
-      householdBFamilyMember3.body.name
-    );
+  });
+});
+
+describe("retrieveHousehold endpoint retrieves one household and all its family members", () => {
+  test("retrieveHousehold endpoint returns response with an empty object if there is no such household", async () => {
+    const response = await request(app)
+      .get("/households/retrieveHousehold")
+      .query({ id: 1 })
+      .set("Accept", "application/json");
+    // assert that response body has an empty object
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toMatchObject({});
+  });
+  test("retrieveHousehold endpoint returns a household and its family members", async () => {
+    // create household
+    const household = await request(app)
+      .post("/households/createHousehold")
+      .send({ housingType: "Landed" })
+      .set("Accept", "application/json");
+    const HouseholdId = household.body.id;
+    // create family members for household A
+    const householdFamilyMember1 = await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdId,
+        name: "FamilyMember1Name",
+        gender: "Female",
+        maritalStatus: "Single",
+        occupationType: "Student",
+        annualIncome: 0,
+        birthDate: new Date("2020-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+    const householdFamilyMember2 = await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdId,
+        name: "FamilyMember2Name",
+        gender: "Male",
+        maritalStatus: "Divorced",
+        occupationType: "Employed",
+        annualIncome: 50000,
+        birthDate: new Date("1977-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+
+    // retrieve all households
+    const retrieveHouseholdResponse = await request(app)
+      .get("/households/retrieveHousehold")
+      .query({ id: HouseholdId })
+      .set("Accept", "application/json");
+
+    // assert that household contains two family members
+    expect(retrieveHouseholdResponse.statusCode).toBe(200);
+    expect(retrieveHouseholdResponse.body.FamilyMembers.length).toBe(2);
   });
 });
