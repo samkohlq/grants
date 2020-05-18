@@ -4,8 +4,8 @@ import models from "../db/models";
 
 afterEach(async () => {
   // clean up database after each test is done
-  // await models.Household.destroy({ where: {} });
-  // await models.FamilyMember.destroy({ where: {} });
+  await models.Household.destroy({ where: {} });
+  await models.FamilyMember.destroy({ where: {} });
 });
 
 afterAll(() => {
@@ -20,10 +20,11 @@ describe("addFamilyMember endpoint validates and adds a family member to househo
       .send({ housingType: "Landed" })
       .set("Accept", "application/json");
     expect(createHouseholdResponse.statusCode).toBe(200);
+    const HouseholdId = createHouseholdResponse.body.id;
     const addFamilyMemberResponse = await request(app)
       .post("/family-members/addFamilyMember")
       .send({
-        HouseholdId: createHouseholdResponse.body.id,
+        HouseholdId: HouseholdId,
         name: "FamilyMemberName",
         gender: "Female",
         maritalStatus: "Single",
@@ -33,9 +34,7 @@ describe("addFamilyMember endpoint validates and adds a family member to househo
       })
       .set("Accept", "application/json");
     // assert that response contains the housingType of the new household
-    expect(addFamilyMemberResponse.body.HouseholdId).toBe(
-      createHouseholdResponse.body.id
-    );
+    expect(addFamilyMemberResponse.body.HouseholdId).toBe(HouseholdId);
     expect(addFamilyMemberResponse.body.name).toBe("FamilyMemberName");
     expect(addFamilyMemberResponse.body.gender).toBe("Female");
     expect(addFamilyMemberResponse.body.maritalStatus).toBe("Single");

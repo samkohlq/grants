@@ -1,5 +1,8 @@
 import express from "express";
-import { createHousehold } from "../controllers/householdController";
+import {
+  createHousehold,
+  retrieveAllHouseholds,
+} from "../controllers/householdController";
 import {
   householdValidationRules,
   validate,
@@ -13,6 +16,11 @@ router.post(
   householdValidationRules(),
   validate,
   (req, res) => createHousehold(req, res)
+);
+
+// retrieve all households
+router.get("/retrieveAllHouseholds", (req, res) =>
+  retrieveAllHouseholds(req, res)
 );
 
 export default router;
