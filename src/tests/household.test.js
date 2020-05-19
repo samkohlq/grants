@@ -357,3 +357,63 @@ describe("retrieveEligibleHouseholds endpoint retrieves households and family me
     );
   });
 });
+
+describe("retrieveEligibleHouseholds endpoint retrieves households eligible for YOLO GST Grant", () => {
+  test("only retrieves HDB households", async () => {
+    // create household
+    const household = await request(app)
+      .post("/households/createHousehold")
+      .send({ housingType: "Landed" })
+      .set("Accept", "application/json");
+    const HouseholdId = household.body.id;
+    // add unemployed adult to Household
+    await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdId,
+        name: "FamilyMember",
+        gender: "Female",
+        maritalStatus: "Single",
+        occupationType: "Unemployed",
+        annualIncome: 0,
+        birthDate: new Date("1980-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+
+    const response = await request(app)
+      .get("/households/retrieveEligibleHouseholds")
+      .set("Accept", "application/json");
+    // assert that response contains the housingType of the new household
+    expect(response.statusCode).toBe(200);
+    expect(response.body.yoloGstGrant.length).toBe(0);
+  });
+
+  test("only retrieves households if combined household income is below $100,000", async () => {
+    // create household
+    const household = await request(app)
+      .post("/households/createHousehold")
+      .send({ housingType: "HDB" })
+      .set("Accept", "application/json");
+    const HouseholdId = household.body.id;
+    // add unemployed adult to Household
+    await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdId,
+        name: "FamilyMember",
+        gender: "Female",
+        maritalStatus: "Single",
+        occupationType: "Employed",
+        annualIncome: 99999,
+        birthDate: new Date("1980-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+
+    const response = await request(app)
+      .get("/households/retrieveEligibleHouseholds")
+      .set("Accept", "application/json");
+    // assert that response contains the housingType of the new household
+    expect(response.statusCode).toBe(200);
+    expect(response.body.yoloGstGrant.length).toBe(1);
+  });
+});

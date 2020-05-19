@@ -40,14 +40,17 @@ export const retrieveEligibleHouseholds = async (req, res) => {
     studentEncouragementBonus: null,
     elderBonus: null,
     babySunshineGrant: null,
+    yoloGstGrant: null,
   };
   const studentEncouragementBonus = await retrieveHouseholdsEligibleForStudentEncouragementBonus();
   const elderBonus = await retrieveHouseholdsEligibleForElderBonus();
   const babySunshineGrant = await retrieveHouseholdsEligibleForBabySunshineGrant();
+  const yoloGstGrant = await retrieveHouseholdsEligibleForYoloGstGrant();
 
   eligibleHouseholds.studentEncouragementBonus = studentEncouragementBonus;
   eligibleHouseholds.elderBonus = elderBonus;
   eligibleHouseholds.babySunshineGrant = babySunshineGrant;
+  eligibleHouseholds.yoloGstGrant = yoloGstGrant;
 
   res.send(eligibleHouseholds);
 };
@@ -139,4 +142,29 @@ let retrieveHouseholdsEligibleForBabySunshineGrant = async () => {
     console.log(error);
   });
   return householdsWithBabies;
+};
+
+// search for households eligible for YOLO GST Grant
+let retrieveHouseholdsEligibleForYoloGstGrant = async () => {
+  const lowIncomeHouseholds = await Household.findAll({
+    attributes: { exclude: ["createdAt", "updatedAt"] },
+    where: {
+      housingType: "HDB",
+    },
+    include: [
+      {
+        model: FamilyMember,
+        attributes: [],
+      },
+    ],
+    group: ["Household.id"],
+    having: sequelize.where(
+      sequelize.fn("sum", sequelize.col("FamilyMembers.annualIncome")),
+      "<",
+      100000
+    ),
+  }).catch((error) => {
+    console.log(error);
+  });
+  return lowIncomeHouseholds;
 };
