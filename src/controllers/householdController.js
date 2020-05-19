@@ -38,9 +38,18 @@ export const retrieveHousehold = async (req, res) => {
 export const retrieveEligibleHouseholds = async (req, res) => {
   let eligibleHouseholds = {
     studentEncouragementBonus: null,
+    elderBonus: null,
   };
+  const studentEncouragementBonus = await retrieveHouseholdsEligibleForStudentEncouragementBonus();
+  const elderBonus = await retrieveHouseholdsEligibleForElderBonus();
 
-  // search for households eligible for Student Encouragement Bonus
+  eligibleHouseholds.studentEncouragementBonus = studentEncouragementBonus;
+  eligibleHouseholds.elderBonus = elderBonus;
+  res.send(eligibleHouseholds);
+};
+
+// search for households eligible for Student Encouragement Bonus
+const retrieveHouseholdsEligibleForStudentEncouragementBonus = async () => {
   let sixteenYearsAgo = new Date();
   sixteenYearsAgo.setFullYear(sixteenYearsAgo.getFullYear() - 16);
   const lowIncomeHouseholds = await Household.findAll({
@@ -80,7 +89,28 @@ export const retrieveEligibleHouseholds = async (req, res) => {
       });
     }
   }
-  eligibleHouseholds.studentEncouragementBonus = studentEncouragementBonus;
+  return studentEncouragementBonus;
+};
 
-  res.send(eligibleHouseholds);
+// search for households eligible for Elder Bonus
+let retrieveHouseholdsEligibleForElderBonus = async () => {
+  let fiftyYearsAgo = new Date();
+  fiftyYearsAgo.setFullYear(fiftyYearsAgo.getFullYear() - 50);
+  const householdsWithElderly = await Household.findAll({
+    attributes: { exclude: ["createdAt", "updatedAt"] },
+    include: [
+      {
+        model: FamilyMember,
+        where: {
+          birthDate: {
+            [Op.lt]: fiftyYearsAgo,
+          },
+        },
+      },
+    ],
+    where: { housingType: "HDB" },
+  }).catch((error) => {
+    console.log(error);
+  });
+  return householdsWithElderly;
 };

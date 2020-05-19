@@ -50,7 +50,7 @@ describe("retrieveAllHouseholds endpoint retrieves all households and their resp
       .set("Accept", "application/json");
     const HouseholdAId = householdA.body.id;
     // create family members for household A
-    const householdAFamilyMember1 = await request(app)
+    await request(app)
       .post("/family-members/addFamilyMember")
       .send({
         HouseholdId: HouseholdAId,
@@ -62,7 +62,7 @@ describe("retrieveAllHouseholds endpoint retrieves all households and their resp
         birthDate: new Date("2020-05-15").toISOString(),
       })
       .set("Accept", "application/json");
-    const householdAFamilyMember2 = await request(app)
+    await request(app)
       .post("/family-members/addFamilyMember")
       .send({
         HouseholdId: HouseholdAId,
@@ -82,7 +82,7 @@ describe("retrieveAllHouseholds endpoint retrieves all households and their resp
       .set("Accept", "application/json");
     const HouseholdBId = householdB.body.id;
     // create family members for household B
-    const householdBFamilyMember1 = await request(app)
+    await request(app)
       .post("/family-members/addFamilyMember")
       .send({
         HouseholdId: HouseholdBId,
@@ -94,7 +94,7 @@ describe("retrieveAllHouseholds endpoint retrieves all households and their resp
         birthDate: new Date("1980-05-15").toISOString(),
       })
       .set("Accept", "application/json");
-    const householdBFamilyMember2 = await request(app)
+    await request(app)
       .post("/family-members/addFamilyMember")
       .send({
         HouseholdId: HouseholdBId,
@@ -106,7 +106,7 @@ describe("retrieveAllHouseholds endpoint retrieves all households and their resp
         birthDate: new Date("1934-05-15").toISOString(),
       })
       .set("Accept", "application/json");
-    const householdBFamilyMember3 = await request(app)
+    await request(app)
       .post("/family-members/addFamilyMember")
       .send({
         HouseholdId: HouseholdBId,
@@ -150,7 +150,7 @@ describe("retrieveHousehold endpoint retrieves one household and all its family 
       .set("Accept", "application/json");
     const HouseholdId = household.body.id;
     // create family members for household A
-    const householdFamilyMember1 = await request(app)
+    await request(app)
       .post("/family-members/addFamilyMember")
       .send({
         HouseholdId: HouseholdId,
@@ -162,7 +162,7 @@ describe("retrieveHousehold endpoint retrieves one household and all its family 
         birthDate: new Date("2020-05-15").toISOString(),
       })
       .set("Accept", "application/json");
-    const householdFamilyMember2 = await request(app)
+    await request(app)
       .post("/family-members/addFamilyMember")
       .send({
         HouseholdId: HouseholdId,
@@ -187,8 +187,8 @@ describe("retrieveHousehold endpoint retrieves one household and all its family 
   });
 });
 
-describe("retrieveEligibleHouseholds endpoint retrieves households and family members that are eligible for various grants", () => {
-  test("retrieveEligibleHouseholds endpoint retrieves households eligible for Student Encouragement Bonus", async () => {
+describe("retrieveEligibleHouseholds endpoint retrieves households and family members that are eligible for Student Encouragement Bonus", () => {
+  test("only retrieves households and family members eligible for Student Encouragement Bonus", async () => {
     // create household A
     const householdA = await request(app)
       .post("/households/createHousehold")
@@ -233,5 +233,80 @@ describe("retrieveEligibleHouseholds endpoint retrieves households and family me
     expect(
       response.body.studentEncouragementBonus[0].FamilyMembers[0].name
     ).toBe("FamilyMemberUnderSixteen");
+  });
+});
+
+describe("retrieveEligibleHouseholds endpoint retrieves households and family members that are eligible for Elder Bonus", () => {
+  test("if housingType is HDB, only retrieves family members above 50", async () => {
+    // create household A
+    const householdA = await request(app)
+      .post("/households/createHousehold")
+      .send({ housingType: "HDB" })
+      .set("Accept", "application/json");
+    const HouseholdAId = householdA.body.id;
+    // add elderly above 50 to Household A
+    await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdAId,
+        name: "FamilyMemberAboveFifty",
+        gender: "Female",
+        maritalStatus: "Single",
+        occupationType: "Unemployed",
+        annualIncome: 0,
+        birthDate: new Date("1950-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+    // add adult below 50 to Household A
+    await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdAId,
+        name: "FamilyMemberBelowFifty",
+        gender: "Male",
+        maritalStatus: "Divorced",
+        occupationType: "Employed",
+        annualIncome: 50000,
+        birthDate: new Date("1977-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+
+    const response = await request(app)
+      .get("/households/retrieveEligibleHouseholds")
+      .set("Accept", "application/json");
+    // assert that response contains the housingType of the new household
+    expect(response.statusCode).toBe(200);
+    expect(response.body.elderBonus[0].FamilyMembers.length).toBe(1);
+    expect(response.body.elderBonus[0].FamilyMembers[0].name).toBe(
+      "FamilyMemberAboveFifty"
+    );
+  });
+
+  test("does not retrieve if housiingType is not HDB, even if there are family members above 50", async () => {
+    // create household A
+    const householdA = await request(app)
+      .post("/households/createHousehold")
+      .send({ housingType: "Condominium" })
+      .set("Accept", "application/json");
+    const HouseholdAId = householdA.body.id;
+    // add elderly above 50 to Household A
+    await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdAId,
+        name: "FamilyMemberAboveFifty",
+        gender: "Female",
+        maritalStatus: "Single",
+        occupationType: "Unemployed",
+        annualIncome: 0,
+        birthDate: new Date("1950-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+    const response = await request(app)
+      .get("/households/retrieveEligibleHouseholds")
+      .set("Accept", "application/json");
+    // assert that response contains the housingType of the new household
+    expect(response.statusCode).toBe(200);
+    expect(response.body.elderBonus.length).toBe(0);
   });
 });
