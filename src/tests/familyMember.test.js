@@ -19,7 +19,7 @@ describe("addFamilyMember endpoint validates and adds a family member to househo
       .post("/households/createHousehold")
       .send({ housingType: "Landed" })
       .set("Accept", "application/json");
-    expect(createHouseholdResponse.statusCode).toBe(200);
+    await expect(createHouseholdResponse.statusCode).toBe(200);
     const HouseholdId = createHouseholdResponse.body.id;
     const addFamilyMemberResponse = await request(app)
       .post("/family-members/addFamilyMember")
@@ -51,7 +51,7 @@ describe("addFamilyMember endpoint validates and adds a family member to househo
       .post("/households/createHousehold")
       .send({ housingType: "Landed" })
       .set("Accept", "application/json");
-    expect(createHouseholdResponse.statusCode).toBe(200);
+    await expect(createHouseholdResponse.statusCode).toBe(200);
     const addFamilyMemberResponse = await request(app)
       .post("/family-members/addFamilyMember")
       .send({
