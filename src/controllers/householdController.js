@@ -1,4 +1,7 @@
-import { FamilyMember, Household } from "../db/models";
+import Sequelize from "sequelize";
+import { FamilyMember, Household, sequelize } from "../db/models";
+
+const Op = Sequelize.Op;
 
 export const createHousehold = async (req, res) => {
   const newHousehold = await Household.create({
@@ -30,4 +33,54 @@ export const retrieveHousehold = async (req, res) => {
     console.log(error);
   });
   res.send(retrievedHousehold);
+};
+
+export const retrieveEligibleHouseholds = async (req, res) => {
+  let eligibleHouseholds = {
+    studentEncouragementBonus: null,
+  };
+
+  // search for households eligible for Student Encouragement Bonus
+  let sixteenYearsAgo = new Date();
+  sixteenYearsAgo.setFullYear(sixteenYearsAgo.getFullYear() - 16);
+  const lowIncomeHouseholds = await Household.findAll({
+    attributes: { exclude: ["createdAt", "updatedAt"] },
+    include: [
+      {
+        model: FamilyMember,
+        attributes: [],
+      },
+    ],
+    group: ["Household.id"],
+    having: sequelize.where(
+      sequelize.fn("sum", sequelize.col("FamilyMembers.annualIncome")),
+      "<",
+      150000
+    ),
+  }).catch((error) => {
+    console.log(error);
+  });
+  // for each household, retrieve family members under younger than 16 years
+  let studentEncouragementBonus = [];
+  for (let i = 0; i < lowIncomeHouseholds.length; i++) {
+    const HouseholdId = lowIncomeHouseholds[i].dataValues.id;
+    const FamilyMembers = await FamilyMember.findAll({
+      attributes: { exclude: ["createdAt", "updatedAt"] },
+      where: {
+        HouseholdId: HouseholdId,
+        birthDate: { [Op.gt]: sixteenYearsAgo },
+      },
+    });
+    // only add household if there are family members younger than 16 years
+    if (FamilyMembers.length > 0) {
+      studentEncouragementBonus.push({
+        id: HouseholdId,
+        housingType: lowIncomeHouseholds[i].dataValues.housingType,
+        FamilyMembers,
+      });
+    }
+  }
+  eligibleHouseholds.studentEncouragementBonus = studentEncouragementBonus;
+
+  res.send(eligibleHouseholds);
 };

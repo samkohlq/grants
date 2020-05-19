@@ -186,3 +186,52 @@ describe("retrieveHousehold endpoint retrieves one household and all its family 
     expect(retrieveHouseholdResponse.body.FamilyMembers.length).toBe(2);
   });
 });
+
+describe("retrieveEligibleHouseholds endpoint retrieves households and family members that are eligible for various grants", () => {
+  test("retrieveEligibleHouseholds endpoint retrieves households eligible for Student Encouragement Bonus", async () => {
+    // create household A
+    const householdA = await request(app)
+      .post("/households/createHousehold")
+      .send({ housingType: "HDB" })
+      .set("Accept", "application/json");
+    const HouseholdAId = householdA.body.id;
+    // add a child under 16 to Household A
+    await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdAId,
+        name: "FamilyMemberUnderSixteen",
+        gender: "Female",
+        maritalStatus: "Single",
+        occupationType: "Student",
+        annualIncome: 0,
+        birthDate: new Date("2020-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+    // add a child above 16 to Household A
+    await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdAId,
+        name: "FamilyMemberAboveSixteen",
+        gender: "Male",
+        maritalStatus: "Divorced",
+        occupationType: "Employed",
+        annualIncome: 50000,
+        birthDate: new Date("1977-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+
+    const response = await request(app)
+      .get("/households/retrieveEligibleHouseholds")
+      .set("Accept", "application/json");
+    // assert that response contains the housingType of the new household
+    expect(response.statusCode).toBe(200);
+    expect(
+      response.body.studentEncouragementBonus[0].FamilyMembers.length
+    ).toBe(1);
+    expect(
+      response.body.studentEncouragementBonus[0].FamilyMembers[0].name
+    ).toBe("FamilyMemberUnderSixteen");
+  });
+});
