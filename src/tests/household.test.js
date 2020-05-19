@@ -233,6 +233,64 @@ describe("retrieveEligibleHouseholds endpoint retrieves households and family me
   });
 });
 
+describe("retrieveEligibleHouseholds endpoint retrieves households eligible for Family Togetherness Scheme", () => {
+  test("only retrieves parents who are still married and living in same household", async () => {
+    // create household
+    const household = await request(app)
+      .post("/households/createHousehold")
+      .send({ housingType: "Landed" })
+      .set("Accept", "application/json");
+    const HouseholdId = household.body.id;
+    // add parents and child to household
+    const parent1 = await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdId,
+        name: "Parent1",
+        gender: "Female",
+        maritalStatus: "Single",
+        occupationType: "Employed",
+        annualIncome: 100000,
+        birthDate: new Date("1980-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+    const parent2 = await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdId,
+        name: "Parent2",
+        gender: "Male",
+        maritalStatus: "Single",
+        occupationType: "Unemployed",
+        annualIncome: 0,
+        birthDate: new Date("1980-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+    const child = await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdId,
+        name: "Child",
+        gender: "Male",
+        maritalStatus: "Single",
+        occupationType: "Unemployed",
+        annualIncome: 0,
+        birthDate: new Date("2020-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+
+    const response = await request(app)
+      .get("/households/retrieveEligibleHouseholds")
+      .set("Accept", "application/json");
+
+    // assert that response contains three family members
+    expect(response.statusCode).toBe(200);
+    expect(response.body.familyTogethernessScheme[0].FamilyMembers.length).toBe(
+      3
+    );
+  });
+});
+
 describe("retrieveEligibleHouseholds endpoint retrieves households and family members that are eligible for Elder Bonus", () => {
   test("if housingType is HDB, only retrieves family members above 50", async () => {
     // create household A

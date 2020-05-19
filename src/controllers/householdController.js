@@ -38,16 +38,19 @@ export const retrieveHousehold = async (req, res) => {
 export const retrieveEligibleHouseholds = async (req, res) => {
   let eligibleHouseholds = {
     studentEncouragementBonus: null,
+    familyTogethernessScheme: null,
     elderBonus: null,
     babySunshineGrant: null,
     yoloGstGrant: null,
   };
   const studentEncouragementBonus = await retrieveHouseholdsEligibleForStudentEncouragementBonus();
+  const familyTogethernessScheme = await retrieveHouseholdsEligibleForFamilyTogethernessScheme();
   const elderBonus = await retrieveHouseholdsEligibleForElderBonus();
   const babySunshineGrant = await retrieveHouseholdsEligibleForBabySunshineGrant();
   const yoloGstGrant = await retrieveHouseholdsEligibleForYoloGstGrant();
 
   eligibleHouseholds.studentEncouragementBonus = studentEncouragementBonus;
+  eligibleHouseholds.familyTogethernessScheme = familyTogethernessScheme;
   eligibleHouseholds.elderBonus = elderBonus;
   eligibleHouseholds.babySunshineGrant = babySunshineGrant;
   eligibleHouseholds.yoloGstGrant = yoloGstGrant;
@@ -97,6 +100,104 @@ const retrieveHouseholdsEligibleForStudentEncouragementBonus = async () => {
     }
   }
   return studentEncouragementBonus;
+};
+
+// search for households eligible for Family Togetherness Scheme
+let retrieveHouseholdsEligibleForFamilyTogethernessScheme = async () => {
+  let eighteenYearsAgo = new Date();
+  eighteenYearsAgo.setFullYear(eighteenYearsAgo.getFullYear() - 18);
+  const householdsWithChildrenBelowEighteen = await Household.findAll({
+    attributes: { exclude: ["createdAt", "updatedAt"] },
+    include: [
+      {
+        model: FamilyMember,
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+        where: {
+          [Op.and]: [
+            {
+              parent1Id: {
+                [Op.ne]: null,
+              },
+            },
+            {
+              parent2Id: {
+                [Op.ne]: null,
+              },
+            },
+            {
+              birthDate: {
+                [Op.gt]: eighteenYearsAgo,
+              },
+            },
+          ],
+        },
+      },
+    ],
+  }).catch((error) => {
+    console.log(error);
+  });
+
+  let householdsEligibleForFamilyTogethernessScheme = [];
+  // for every household that has children below eighteen
+  for (let i = 0; i < householdsWithChildrenBelowEighteen.length; i++) {
+    let parents = [];
+    const FamilyMembers = [];
+    const HouseholdId = householdsWithChildrenBelowEighteen[i].id;
+    // for each child with parents
+    for (
+      let j = 0;
+      j < householdsWithChildrenBelowEighteen[i].FamilyMembers.length;
+      j++
+    ) {
+      // find child's parent IDs and add them to parents array
+      const parent1Id =
+        householdsWithChildrenBelowEighteen[i].FamilyMembers[j].parent1Id;
+      const parent2Id =
+        householdsWithChildrenBelowEighteen[i].FamilyMembers[j].parent2Id;
+
+      // check if parents are married to each other
+      const parent1 = await FamilyMember.findOne({
+        where: {
+          id: parent1Id,
+        },
+      });
+      const parent2 = await FamilyMember.findOne({
+        where: {
+          id: parent2Id,
+        },
+      });
+
+      if (parent1.spouseId == parent2.id && parent2.spouseId == parent1.id) {
+        // add child to FamilyMembers array
+        FamilyMembers.push(
+          householdsWithChildrenBelowEighteen[i].FamilyMembers[j]
+        );
+        parents.push(parent1Id);
+        parents.push(parent2Id);
+      }
+    }
+
+    // get distinct set of parent IDs
+    const distinctParents = [...new Set(parents)];
+
+    // add each distinct parent to FamilyMembers array
+    for (let k = 0; k < distinctParents.length; k++) {
+      const retrievedParent = await FamilyMember.findOne({
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+        where: {
+          id: distinctParents[k],
+        },
+      });
+      FamilyMembers.push(retrievedParent);
+    }
+
+    await householdsEligibleForFamilyTogethernessScheme.push({
+      id: HouseholdId,
+      housingType: householdsWithChildrenBelowEighteen[i].housingType,
+      FamilyMembers,
+    });
+  }
+  return householdsEligibleForFamilyTogethernessScheme;
 };
 
 // search for households eligible for Elder Bonus
