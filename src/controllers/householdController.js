@@ -39,12 +39,16 @@ export const retrieveEligibleHouseholds = async (req, res) => {
   let eligibleHouseholds = {
     studentEncouragementBonus: null,
     elderBonus: null,
+    babySunshineGrant: null,
   };
   const studentEncouragementBonus = await retrieveHouseholdsEligibleForStudentEncouragementBonus();
   const elderBonus = await retrieveHouseholdsEligibleForElderBonus();
+  const babySunshineGrant = await retrieveHouseholdsEligibleForBabySunshineGrant();
 
   eligibleHouseholds.studentEncouragementBonus = studentEncouragementBonus;
   eligibleHouseholds.elderBonus = elderBonus;
+  eligibleHouseholds.babySunshineGrant = babySunshineGrant;
+
   res.send(eligibleHouseholds);
 };
 
@@ -113,4 +117,26 @@ let retrieveHouseholdsEligibleForElderBonus = async () => {
     console.log(error);
   });
   return householdsWithElderly;
+};
+
+// search for households eligible for Baby Sunshine Grant
+let retrieveHouseholdsEligibleForBabySunshineGrant = async () => {
+  let fiveYearsAgo = new Date();
+  fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+  const householdsWithBabies = await Household.findAll({
+    attributes: { exclude: ["createdAt", "updatedAt"] },
+    include: [
+      {
+        model: FamilyMember,
+        where: {
+          birthDate: {
+            [Op.gt]: fiveYearsAgo,
+          },
+        },
+      },
+    ],
+  }).catch((error) => {
+    console.log(error);
+  });
+  return householdsWithBabies;
 };

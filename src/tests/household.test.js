@@ -282,7 +282,7 @@ describe("retrieveEligibleHouseholds endpoint retrieves households and family me
     );
   });
 
-  test("does not retrieve if housiingType is not HDB, even if there are family members above 50", async () => {
+  test("does not retrieve if housingType is not HDB, even if there are family members above 50", async () => {
     // create household A
     const householdA = await request(app)
       .post("/households/createHousehold")
@@ -308,5 +308,52 @@ describe("retrieveEligibleHouseholds endpoint retrieves households and family me
     // assert that response contains the housingType of the new household
     expect(response.statusCode).toBe(200);
     expect(response.body.elderBonus.length).toBe(0);
+  });
+});
+
+describe("retrieveEligibleHouseholds endpoint retrieves households and family members that are eligible for Baby Sunshine Grant", () => {
+  test("only retrieves family members younger than 5", async () => {
+    // create household
+    const household = await request(app)
+      .post("/households/createHousehold")
+      .send({ housingType: "Landed" })
+      .set("Accept", "application/json");
+    const HouseholdId = household.body.id;
+    // add baby younger than 5 to Household
+    await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdId,
+        name: "FamilyMemberBelowFive",
+        gender: "Female",
+        maritalStatus: "Single",
+        occupationType: "Unemployed",
+        annualIncome: 0,
+        birthDate: new Date("2020-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+    // add adult above 5 to Household
+    await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdId,
+        name: "FamilyMemberAboveFive",
+        gender: "Male",
+        maritalStatus: "Single",
+        occupationType: "Employed",
+        annualIncome: 50000,
+        birthDate: new Date("1977-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+
+    const response = await request(app)
+      .get("/households/retrieveEligibleHouseholds")
+      .set("Accept", "application/json");
+    // assert that response contains the housingType of the new household
+    expect(response.statusCode).toBe(200);
+    expect(response.body.babySunshineGrant[0].FamilyMembers.length).toBe(1);
+    expect(response.body.babySunshineGrant[0].FamilyMembers[0].name).toBe(
+      "FamilyMemberBelowFive"
+    );
   });
 });
