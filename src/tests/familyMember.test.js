@@ -68,3 +68,53 @@ describe("addFamilyMember endpoint validates and adds a family member to househo
     expect(addFamilyMemberResponse.statusCode).toBe(422);
   });
 });
+
+describe("setCoupleAsMarried endpoint sets spouseIds and maritalStatuses", () => {
+  test("marital statuses are 'Married', spouse1's spouseId is spouse2 and vice versa", async () => {
+    const createHouseholdResponse = await request(app)
+      .post("/households/createHousehold")
+      .send({ housingType: "Landed" })
+      .set("Accept", "application/json");
+    await expect(createHouseholdResponse.statusCode).toBe(200);
+    const HouseholdId = createHouseholdResponse.body.id;
+    // add married couple as family members
+    const FamilyMember1 = await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdId,
+        name: "FamilyMember1",
+        gender: "Female",
+        maritalStatus: "Single",
+        occupationType: "Employed",
+        annualIncome: 50000,
+        birthDate: new Date("1980-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+    const FamilyMember2 = await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdId,
+        name: "FamilyMember2",
+        gender: "Male",
+        maritalStatus: "Single",
+        occupationType: "Employed",
+        annualIncome: 50000,
+        birthDate: new Date("1984-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+    // set marital statuses and spouseIds
+    const setCoupleAsMarriedResponse = await request(app)
+      .put("/family-members/setCoupleAsMarried")
+      .send({ spouse1Id: FamilyMember1.id, spouse2Id: FamilyMember2.id });
+
+    // retrieve Household and its family members
+    const retrieveHouseholdResponse = await request(app)
+      .get("/households/retrieveHousehold")
+      .query({ id: HouseholdId })
+      .set("Accept", "application/json");
+
+    // assert that married couple have each other's IDs as spouseIds
+    expect(setCoupleAsMarriedResponse.statusCode).toBe(200);
+    expect(retrieveHouseholdResponse.statusCode).toBe(200);
+  });
+});

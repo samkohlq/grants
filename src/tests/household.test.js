@@ -125,10 +125,7 @@ describe("retrieveAllHouseholds endpoint retrieves all households and their resp
       .set("Accept", "application/json");
 
     expect(retrieveAllHouseholdsResponse.statusCode).toBe(200);
-    // assert that householdA contains two family members
-    expect(retrieveAllHouseholdsResponse.body[0].FamilyMembers.length).toBe(2);
-    // assert that householdA contains three family members
-    expect(retrieveAllHouseholdsResponse.body[1].FamilyMembers.length).toBe(3);
+    expect(retrieveAllHouseholdsResponse.body.length).toBe(2);
   });
 });
 
@@ -175,7 +172,7 @@ describe("retrieveHousehold endpoint retrieves one household and all its family 
       })
       .set("Accept", "application/json");
 
-    // retrieve all households
+    // retrieve household
     const retrieveHouseholdResponse = await request(app)
       .get("/households/retrieveHousehold")
       .query({ id: HouseholdId })

@@ -1,5 +1,8 @@
 import express from "express";
-import { addFamilyMember } from "../controllers/familyMemberController";
+import {
+  addFamilyMember,
+  setCoupleAsMarried,
+} from "../controllers/familyMemberController";
 import {
   familyMemberValidationRules,
   validate,
@@ -14,5 +17,7 @@ router.post(
   validate,
   (req, res) => addFamilyMember(req, res)
 );
+
+router.put("/setCoupleAsMarried", (req, res) => setCoupleAsMarried(req, res));
 
 export default router;

@@ -16,3 +16,29 @@ export const addFamilyMember = async (req, res) => {
   await newFamilyMember.setHousehold(associatedHousehold);
   res.send(newFamilyMember);
 };
+
+export const setCoupleAsMarried = async (req, res) => {
+  await Promise.all([
+    FamilyMember.update(
+      {
+        maritalStatus: "Married",
+        spouseId: req.body.spouse2Id,
+      },
+      {
+        where: { id: req.body.spouse1Id },
+      }
+    ),
+    FamilyMember.update(
+      {
+        maritalStatus: "Married",
+        spouseId: req.body.spouse1Id,
+      },
+      {
+        where: { id: req.body.spouse2Id },
+      }
+    ),
+  ]).catch((error) => {
+    console.log(error);
+  });
+  res.send("updated spouse Ids and set marital statuses to 'Married'");
+};
