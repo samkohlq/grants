@@ -10,6 +10,8 @@ module.exports = (sequelize, DataTypes) => {
       occupationType: DataTypes.STRING,
       annualIncome: DataTypes.INTEGER,
       birthDate: DataTypes.DATE,
+      parent1Id: DataTypes.INTEGER,
+      parent2Id: DataTypes.INTEGER,
     },
     {}
   );

@@ -2,6 +2,7 @@ import express from "express";
 import {
   addFamilyMember,
   setCoupleAsMarried,
+  setParentsForChild,
 } from "../controllers/familyMemberController";
 import {
   familyMemberValidationRules,
@@ -10,7 +11,6 @@ import {
 
 const router = express.Router();
 
-// add family member to household
 router.post(
   "/addFamilyMember",
   familyMemberValidationRules(),
@@ -19,5 +19,7 @@ router.post(
 );
 
 router.put("/setCoupleAsMarried", (req, res) => setCoupleAsMarried(req, res));
+
+router.put("/setParentsForChild", (req, res) => setParentsForChild(req, res));
 
 export default router;

@@ -42,3 +42,18 @@ export const setCoupleAsMarried = async (req, res) => {
   });
   res.send("updated spouse Ids and set marital statuses to 'Married'");
 };
+
+export const setParentsForChild = async (req, res) => {
+  await FamilyMember.update(
+    {
+      parent1Id: req.body.parent1Id,
+      parent2Id: req.body.parent2Id,
+    },
+    {
+      where: { id: req.body.childId },
+    }
+  ).catch((error) => {
+    console.log(error);
+  });
+  res.send("child's parent IDs set");
+};

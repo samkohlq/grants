@@ -118,3 +118,72 @@ describe("setCoupleAsMarried endpoint sets spouseIds and maritalStatuses", () =>
     expect(retrieveHouseholdResponse.statusCode).toBe(200);
   });
 });
+
+describe("setParentsForChild endpoint sets parent1 and parent2 IDs in child's family member record", () => {
+  test("parent1 and parent2 IDs set", async () => {
+    const createHouseholdResponse = await request(app)
+      .post("/households/createHousehold")
+      .send({ housingType: "Landed" })
+      .set("Accept", "application/json");
+    await expect(createHouseholdResponse.statusCode).toBe(200);
+    const HouseholdId = createHouseholdResponse.body.id;
+    // add parents as family members
+    const Parent1 = await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdId,
+        name: "Parent1",
+        gender: "Female",
+        maritalStatus: "Single",
+        occupationType: "Employed",
+        annualIncome: 50000,
+        birthDate: new Date("1980-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+    const Parent2 = await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdId,
+        name: "Parent2",
+        gender: "Male",
+        maritalStatus: "Single",
+        occupationType: "Employed",
+        annualIncome: 50000,
+        birthDate: new Date("1984-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+    // add child as family member
+    const Child = await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdId,
+        name: "Child",
+        gender: "Male",
+        maritalStatus: "Single",
+        occupationType: "Unemployed",
+        annualIncome: 0,
+        birthDate: new Date("2020-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+
+    // set child's parents
+    const setParentsForChildResponse = await request(app)
+      .put("/family-members/setParentsForChild")
+      .send({
+        parent1Id: Parent1.id,
+        parent2Id: Parent2.id,
+        childId: Child.id,
+      })
+      .set("Accept", "application/json");
+
+    // retrieve Household and its family members
+    const retrieveHouseholdResponse = await request(app)
+      .get("/households/retrieveHousehold")
+      .query({ id: HouseholdId })
+      .set("Accept", "application/json");
+
+    // assert that married couple have each other's IDs as spouseIds
+    expect(setParentsForChildResponse.statusCode).toBe(200);
+    expect(retrieveHouseholdResponse.statusCode).toBe(200);
+  });
+});
