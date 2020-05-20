@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node ./src/bin/www",
     "start:dev": "nodemon --exec babel-node ./src/bin/www",
-    "test": "jest"
+    "test": "jest --runInBand"
   },
   "dependencies": {
     "@babel/core": "^7.9.6",
