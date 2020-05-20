@@ -22,40 +22,43 @@ export const retrieveEligibleHouseholds = async (req, res) => {
   const babySunshineGrant = await retrieveHouseholdsEligibleForBabySunshineGrant();
   const yoloGstGrant = await retrieveHouseholdsEligibleForYoloGstGrant();
 
-  eligibleHouseholds.studentEncouragementBonus = await filterResult(
+  eligibleHouseholds.studentEncouragementBonus = await filterArray(
     studentEncouragementBonus,
     filters
   );
-  eligibleHouseholds.familyTogethernessScheme = await filterResult(
+  eligibleHouseholds.familyTogethernessScheme = await filterArray(
     familyTogethernessScheme,
     filters
   );
-  eligibleHouseholds.elderBonus = await filterResult(elderBonus, filters);
-  eligibleHouseholds.babySunshineGrant = await filterResult(
+  eligibleHouseholds.elderBonus = await filterArray(elderBonus, filters);
+  eligibleHouseholds.babySunshineGrant = await filterArray(
     babySunshineGrant,
     filters
   );
-  eligibleHouseholds.yoloGstGrant = await filterResult(yoloGstGrant, filters);
+  eligibleHouseholds.yoloGstGrant = await filterArray(yoloGstGrant, filters);
 
   res.send(eligibleHouseholds);
 };
 
-const filterResult = async (arrayToFilter, filters) => {
-  let filteredArray = [];
-  if (filters.householdSize) {
-    // go through households and check for each household's size
-    for (let i = 0; i < arrayToFilter.length; i++) {
-      const HouseholdId = arrayToFilter[i].id;
-      const familyMembers = await FamilyMember.findAll({
-        where: { HouseholdId: HouseholdId },
-      });
-      if (familyMembers.length == filters.householdSize) {
-        filteredArray.push(arrayToFilter[i]);
+const filterArray = async (householdArray, filters) => {
+  let filteredHouseholds = [];
+  if (!filters.householdSize && !filters.combinedHouseholdIncome) {
+    return householdArray;
+  } else {
+    if (filters.householdSize) {
+      // go through households and check for each household's size
+      for (let household of householdArray) {
+        const HouseholdId = household.id;
+        const familyMembers = await FamilyMember.findAll({
+          where: { HouseholdId: HouseholdId },
+        });
+        if (familyMembers.length == filters.householdSize) {
+          filteredHouseholds.push(household);
+        }
       }
     }
-    return filteredArray;
+    return filteredHouseholds;
   }
-  return arrayToFilter;
 };
 
 // search for households eligible for Student Encouragement Bonus
@@ -81,8 +84,8 @@ const retrieveHouseholdsEligibleForStudentEncouragementBonus = async () => {
   });
   // for each household, retrieve family members under younger than 16 years
   let studentEncouragementBonus = [];
-  for (let i = 0; i < lowIncomeHouseholds.length; i++) {
-    const HouseholdId = lowIncomeHouseholds[i].id;
+  for (let household of lowIncomeHouseholds) {
+    const HouseholdId = household.id;
     const FamilyMembers = await FamilyMember.findAll({
       attributes: { exclude: ["createdAt", "updatedAt"] },
       where: {
@@ -94,7 +97,7 @@ const retrieveHouseholdsEligibleForStudentEncouragementBonus = async () => {
     if (FamilyMembers.length > 0) {
       studentEncouragementBonus.push({
         id: HouseholdId,
-        housingType: lowIncomeHouseholds[i].housingType,
+        housingType: household.housingType,
         FamilyMembers,
       });
     }
@@ -139,21 +142,15 @@ let retrieveHouseholdsEligibleForFamilyTogethernessScheme = async () => {
 
   let familyTogethernessScheme = [];
   // for every household that has children below eighteen
-  for (let i = 0; i < householdsWithChildrenBelowEighteen.length; i++) {
+  for (let household of householdsWithChildrenBelowEighteen) {
     let parents = [];
     const FamilyMembers = [];
-    const HouseholdId = householdsWithChildrenBelowEighteen[i].id;
+    const HouseholdId = household.id;
     // for each child with parents
-    for (
-      let j = 0;
-      j < householdsWithChildrenBelowEighteen[i].FamilyMembers.length;
-      j++
-    ) {
+    for (let familyMember of household.FamilyMembers) {
       // find child's parent IDs and add them to parents array
-      const parent1Id =
-        householdsWithChildrenBelowEighteen[i].FamilyMembers[j].parent1Id;
-      const parent2Id =
-        householdsWithChildrenBelowEighteen[i].FamilyMembers[j].parent2Id;
+      const parent1Id = familyMember.parent1Id;
+      const parent2Id = familyMember.parent2Id;
 
       // check if parents are married to each other
       const parent1 = await FamilyMember.findOne({
@@ -169,9 +166,7 @@ let retrieveHouseholdsEligibleForFamilyTogethernessScheme = async () => {
 
       if (parent1.spouseId == parent2.id && parent2.spouseId == parent1.id) {
         // add child to FamilyMembers array if parents live in same household
-        FamilyMembers.push(
-          householdsWithChildrenBelowEighteen[i].FamilyMembers[j]
-        );
+        FamilyMembers.push(familyMember);
         parents.push(parent1Id);
         parents.push(parent2Id);
       }
@@ -181,11 +176,11 @@ let retrieveHouseholdsEligibleForFamilyTogethernessScheme = async () => {
     const distinctParents = [...new Set(parents)];
 
     // add each distinct parent to FamilyMembers array
-    for (let k = 0; k < distinctParents.length; k++) {
+    for (let parentId in distinctParents) {
       const retrievedParent = await FamilyMember.findOne({
         attributes: { exclude: ["createdAt", "updatedAt"] },
         where: {
-          id: distinctParents[k],
+          id: parentId,
         },
       });
       FamilyMembers.push(retrievedParent);
@@ -195,7 +190,7 @@ let retrieveHouseholdsEligibleForFamilyTogethernessScheme = async () => {
     if (FamilyMembers.length > 0) {
       familyTogethernessScheme.push({
         id: HouseholdId,
-        housingType: householdsWithChildrenBelowEighteen[i].housingType,
+        housingType: household.housingType,
         FamilyMembers,
       });
     }
