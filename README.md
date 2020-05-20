@@ -49,6 +49,8 @@ npm test
 
 ## Grants' rules and assumptions made
 
+All results can be filtered by household size. If not specified, the response will contain all eligible recipients based on the criteria below without the additional filter.
+
 #### Student Encouragement Bonus
 
 Eligibility critera:
