@@ -2,7 +2,6 @@ import express from "express";
 import {
   createHousehold,
   retrieveAllHouseholds,
-  retrieveEligibleHouseholds,
   retrieveHousehold,
 } from "../controllers/householdController";
 import {
@@ -27,10 +26,5 @@ router.get("/retrieveAllHouseholds", (req, res) =>
 
 // retrieve a household by id
 router.get("/retrieveHousehold", (req, res) => retrieveHousehold(req, res));
-
-// retrieve all households eligible for grants
-router.get("/retrieveEligibleHouseholds", (req, res) =>
-  retrieveEligibleHouseholds(req, res)
-);
 
 export default router;
