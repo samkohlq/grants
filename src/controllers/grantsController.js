@@ -159,11 +159,14 @@ let retrieveHouseholdsEligibleForFamilyTogethernessScheme = async () => {
       FamilyMembers.push(retrievedParent);
     }
 
-    await familyTogethernessScheme.push({
-      id: HouseholdId,
-      housingType: householdsWithChildrenBelowEighteen[i].housingType,
-      FamilyMembers,
-    });
+    // only add household if there are family members younger than 16 years
+    if (FamilyMembers.length > 0) {
+      familyTogethernessScheme.push({
+        id: HouseholdId,
+        housingType: householdsWithChildrenBelowEighteen[i].housingType,
+        FamilyMembers,
+      });
+    }
   }
   return familyTogethernessScheme;
 };

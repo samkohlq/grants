@@ -13,8 +13,8 @@ afterAll(() => {
   models.sequelize.close();
 });
 
-describe("retrieveEligibleHouseholds endpoint retrieves households and family members that are eligible for Student Encouragement Bonus", () => {
-  test("only retrieves households and family members eligible for Student Encouragement Bonus", async () => {
+describe("retrieveEligibleHouseholds retrieves households and family members eligible for Student Encouragement Bonus", () => {
+  test("retrieves households with annual income below $150,000 and family members below age 16", async () => {
     // create household A
     const householdA = await request(app)
       .post("/households/createHousehold")
@@ -34,7 +34,7 @@ describe("retrieveEligibleHouseholds endpoint retrieves households and family me
         birthDate: new Date("2020-05-15").toISOString(),
       })
       .set("Accept", "application/json");
-    // add a child above 16 to Household A
+    // add an adult with low income, above 16 to Household A
     await request(app)
       .post("/family-members/addFamilyMember")
       .send({
@@ -48,11 +48,47 @@ describe("retrieveEligibleHouseholds endpoint retrieves households and family me
       })
       .set("Accept", "application/json");
 
+    // create household B
+    const householdB = await request(app)
+      .post("/households/createHousehold")
+      .send({ housingType: "Condominium" })
+      .set("Accept", "application/json");
+    const HouseholdBId = householdB.body.id;
+    // add a child under 16 to Household B
+    await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdBId,
+        name: "FamilyMemberUnderSixteen",
+        gender: "Female",
+        maritalStatus: "Single",
+        occupationType: "Student",
+        annualIncome: 0,
+        birthDate: new Date("2020-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+    // add an adult with high income, above 16 to Household B
+    await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdBId,
+        name: "FamilyMemberAboveSixteen",
+        gender: "Male",
+        maritalStatus: "Divorced",
+        occupationType: "Employed",
+        annualIncome: 200000,
+        birthDate: new Date("1977-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+
     const response = await request(app)
       .get("/grants/retrieveEligibleHouseholds")
       .set("Accept", "application/json");
-    // assert that response contains the housingType of the new household
+
+    // assert that response only contains the low income household
     expect(response.statusCode).toBe(200);
+    expect(response.body.studentEncouragementBonus.length).toBe(1);
+    expect(response.body.studentEncouragementBonus[0].housingType).toBe("HDB");
     expect(
       response.body.studentEncouragementBonus[0].FamilyMembers.length
     ).toBe(1);
@@ -70,7 +106,7 @@ describe("retrieveEligibleHouseholds endpoint retrieves households eligible for 
       .send({ housingType: "Landed" })
       .set("Accept", "application/json");
     const HouseholdId = household.body.id;
-    // add parents and child to household
+    // add parents and children to household
     const parent1 = await request(app)
       .post("/family-members/addFamilyMember")
       .send({
@@ -108,7 +144,7 @@ describe("retrieveEligibleHouseholds endpoint retrieves households eligible for 
       })
       .set("Accept", "application/json");
 
-    // set parents to married
+    // set parents 1 and 2 to married
     await request(app)
       .put("/family-members/setCoupleAsMarried")
       .send({
@@ -117,7 +153,7 @@ describe("retrieveEligibleHouseholds endpoint retrieves households eligible for 
       })
       .set("Accept", "application/json");
 
-    // set parents for child
+    // set parents 1 and 2 for child
     await request(app).put("/family-members/setParentsForChild").send({
       parent1Id: parent1.body.id,
       parent2Id: parent2.body.id,
@@ -135,6 +171,68 @@ describe("retrieveEligibleHouseholds endpoint retrieves households eligible for 
     expect(response.body.familyTogethernessScheme[0].FamilyMembers.length).toBe(
       3
     );
+  });
+
+  test("does not retrieve parents who are not married, even if living in same household", async () => {
+    // create household
+    const household = await request(app)
+      .post("/households/createHousehold")
+      .send({ housingType: "Landed" })
+      .set("Accept", "application/json");
+    const HouseholdId = household.body.id;
+    // add parents and children to household
+    const parent1 = await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdId,
+        name: "Parent1",
+        gender: "Female",
+        maritalStatus: "Single",
+        occupationType: "Employed",
+        annualIncome: 100000,
+        birthDate: new Date("1980-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+    const parent2 = await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdId,
+        name: "Parent2",
+        gender: "Male",
+        maritalStatus: "Single",
+        occupationType: "Unemployed",
+        annualIncome: 0,
+        birthDate: new Date("1980-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+    const child = await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdId,
+        name: "Child",
+        gender: "Male",
+        maritalStatus: "Single",
+        occupationType: "Unemployed",
+        annualIncome: 0,
+        birthDate: new Date("2020-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+
+    // set parents 1 and 2 for child
+    await request(app).put("/family-members/setParentsForChild").send({
+      parent1Id: parent1.body.id,
+      parent2Id: parent2.body.id,
+      childId: child.body.id,
+    });
+
+    // check for eligible households
+    const response = await request(app)
+      .get("/grants/retrieveEligibleHouseholds")
+      .set("Accept", "application/json");
+
+    // assert that response contains three family members
+    expect(response.statusCode).toBe(200);
+    expect(response.body.familyTogethernessScheme.length).toBe(0);
   });
 });
 
