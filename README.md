@@ -1,7 +1,5 @@
 # Grants
 
-## Summary
-
 This set of API endpoints allows users to:
 
 1. Create a household
