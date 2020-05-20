@@ -4,8 +4,8 @@ import models from "../db/models";
 
 afterEach(async () => {
   // clean up database after each test is done
-  await models.Household.destroy({ where: {} });
-  await models.FamilyMember.destroy({ where: {} });
+  await models.Household.destroy({ where: {}, force: true });
+  await models.FamilyMember.destroy({ where: {}, force: true });
 });
 
 afterAll(() => {
@@ -205,5 +205,60 @@ describe("setParentsForChild endpoint sets parent1 and parent2 IDs in child's fa
     expect(retrieveHouseholdResponse.body.FamilyMembers[2].parent2Id).toBe(
       Parent2.body.id
     );
+  });
+});
+
+describe("removeFamilyMemberFromHousehold endpoint sets family member's HouseholdId to null", () => {
+  test("family member's HouseholdId set to null, retrieve household does not retrieve removed family member", async () => {
+    const createHouseholdResponse = await request(app)
+      .post("/households/createHousehold")
+      .send({ housingType: "Landed" })
+      .set("Accept", "application/json");
+    await expect(createHouseholdResponse.statusCode).toBe(200);
+    const HouseholdId = createHouseholdResponse.body.id;
+    // add parents as family members
+    const FamilyMember1 = await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdId,
+        name: "FamilyMember1",
+        gender: "Female",
+        maritalStatus: "Single",
+        occupationType: "Employed",
+        annualIncome: 50000,
+        birthDate: new Date("1980-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+    const FamilyMember2 = await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdId,
+        name: "FamilyMember2",
+        gender: "Male",
+        maritalStatus: "Single",
+        occupationType: "Employed",
+        annualIncome: 50000,
+        birthDate: new Date("1984-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+
+    // remove family member 1 from household
+    const removeFamilyMemberResponse = await request(app)
+      .put("/family-members/removeFamilyMemberFromHousehold")
+      .send({
+        familyMemberId: FamilyMember1.body.id,
+      })
+      .set("Accept", "application/json");
+
+    // retrieve Household and its family members
+    const retrieveHouseholdResponse = await request(app)
+      .get("/households/retrieveHousehold")
+      .query({ id: HouseholdId })
+      .set("Accept", "application/json");
+
+    // assert that married couple have each other's IDs as spouseIds
+    expect(removeFamilyMemberResponse.statusCode).toBe(200);
+    expect(retrieveHouseholdResponse.statusCode).toBe(200);
+    expect(retrieveHouseholdResponse.body.FamilyMembers.length).toBe(1);
   });
 });

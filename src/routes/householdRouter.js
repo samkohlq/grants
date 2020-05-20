@@ -1,6 +1,7 @@
 import express from "express";
 import {
   createHousehold,
+  deleteHousehold,
   retrieveAllHouseholds,
   retrieveHousehold,
 } from "../controllers/householdController";
@@ -26,5 +27,8 @@ router.get("/retrieveAllHouseholds", (req, res) =>
 
 // retrieve a household by id
 router.get("/retrieveHousehold", (req, res) => retrieveHousehold(req, res));
+
+// soft delete a household by id
+router.delete("/deleteHousehold", (req, res) => deleteHousehold(req, res));
 
 export default router;

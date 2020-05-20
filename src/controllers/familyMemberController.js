@@ -57,3 +57,17 @@ export const setParentsForChild = async (req, res) => {
   });
   res.send("child's parent IDs set");
 };
+
+export const removeFamilyMemberFromHousehold = async (req, res) => {
+  await FamilyMember.update(
+    {
+      HouseholdId: null,
+    },
+    {
+      where: { id: req.body.familyMemberId },
+    }
+  ).catch((error) => {
+    console.log(error);
+  });
+  res.send("removed family member from household");
+};

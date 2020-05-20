@@ -4,8 +4,8 @@ import models from "../db/models";
 
 afterEach(async () => {
   // clean up database after each test is done
-  await models.Household.destroy({ where: {} });
-  await models.FamilyMember.destroy({ where: {} });
+  await models.Household.destroy({ where: {}, force: true });
+  await models.FamilyMember.destroy({ where: {}, force: true });
 });
 
 afterAll(() => {

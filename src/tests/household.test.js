@@ -4,8 +4,8 @@ import models from "../db/models";
 
 afterEach(async () => {
   // clean up database after each test is done
-  await models.Household.destroy({ where: {} });
-  await models.FamilyMember.destroy({ where: {} });
+  await models.Household.destroy({ where: {}, force: true });
+  await models.FamilyMember.destroy({ where: {}, force: true });
 });
 
 afterAll(() => {
@@ -146,7 +146,7 @@ describe("retrieveHousehold endpoint retrieves one household and all its family 
       .send({ housingType: "Landed" })
       .set("Accept", "application/json");
     const HouseholdId = household.body.id;
-    // create family members for household A
+    // create family members for household
     await request(app)
       .post("/family-members/addFamilyMember")
       .send({
@@ -181,5 +181,56 @@ describe("retrieveHousehold endpoint retrieves one household and all its family 
     // assert that household contains two family members
     expect(retrieveHouseholdResponse.statusCode).toBe(200);
     expect(retrieveHouseholdResponse.body.FamilyMembers.length).toBe(2);
+  });
+});
+
+describe("deleteHousehold endpoint soft deletes all family members and the household they belong to", () => {
+  test("retrieveHouseholds returns empty after household has been soft deleted", async () => {
+    const household = await request(app)
+      .post("/households/createHousehold")
+      .send({ housingType: "Landed" })
+      .set("Accept", "application/json");
+    const HouseholdId = household.body.id;
+    // create family members for household
+    await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdId,
+        name: "FamilyMember1Name",
+        gender: "Female",
+        maritalStatus: "Single",
+        occupationType: "Student",
+        annualIncome: 0,
+        birthDate: new Date("2020-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+    await request(app)
+      .post("/family-members/addFamilyMember")
+      .send({
+        HouseholdId: HouseholdId,
+        name: "FamilyMember2Name",
+        gender: "Male",
+        maritalStatus: "Divorced",
+        occupationType: "Employed",
+        annualIncome: 50000,
+        birthDate: new Date("1977-05-15").toISOString(),
+      })
+      .set("Accept", "application/json");
+
+    await request(app)
+      .delete("/households/deleteHousehold")
+      .send({
+        HouseholdId: HouseholdId,
+      })
+      .set("Accept", "application/json");
+
+    // retrieve household
+    const retrieveHouseholdResponse = await request(app)
+      .get("/households/retrieveAllHouseholds")
+      .set("Accept", "application/json");
+
+    // assert that household contains two family members
+    expect(retrieveHouseholdResponse.statusCode).toBe(200);
+    expect(retrieveHouseholdResponse.body.length).toBe(0);
   });
 });

@@ -31,3 +31,21 @@ export const retrieveHousehold = async (req, res) => {
   });
   res.send(retrievedHousehold);
 };
+
+export const deleteHousehold = async (req, res) => {
+  await Promise.all([
+    FamilyMember.destroy({
+      where: {
+        HouseholdId: req.body.HouseholdId,
+      },
+    }),
+    Household.destroy({
+      where: {
+        id: req.body.HouseholdId,
+      },
+    }),
+  ]).catch((error) => {
+    console.log(error);
+  }),
+    res.send("Household and family members soft deleted");
+};
