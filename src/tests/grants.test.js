@@ -237,7 +237,7 @@ describe("retrieveEligibleHouseholds endpoint retrieves households eligible for 
 });
 
 describe("retrieveEligibleHouseholds endpoint retrieves households and family members that are eligible for Elder Bonus", () => {
-  test("if housingType is HDB, only retrieves family members above 50", async () => {
+  test("only retrieves family members above 50", async () => {
     // create household A
     const householdA = await request(app)
       .post("/households/createHousehold")
@@ -404,7 +404,7 @@ describe("retrieveEligibleHouseholds endpoint retrieves households eligible for 
         gender: "Female",
         maritalStatus: "Single",
         occupationType: "Employed",
-        annualIncome: 99999,
+        annualIncome: 100000,
         birthDate: new Date("1980-05-15").toISOString(),
       })
       .set("Accept", "application/json");
@@ -414,6 +414,6 @@ describe("retrieveEligibleHouseholds endpoint retrieves households eligible for 
       .set("Accept", "application/json");
     // assert that response contains the housingType of the new household
     expect(response.statusCode).toBe(200);
-    expect(response.body.yoloGstGrant.length).toBe(1);
+    expect(response.body.yoloGstGrant.length).toBe(0);
   });
 });

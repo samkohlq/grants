@@ -105,7 +105,10 @@ describe("setCoupleAsMarried endpoint sets spouseIds and maritalStatuses", () =>
     // set marital statuses and spouseIds
     const setCoupleAsMarriedResponse = await request(app)
       .put("/family-members/setCoupleAsMarried")
-      .send({ spouse1Id: FamilyMember1.id, spouse2Id: FamilyMember2.id });
+      .send({
+        spouse1Id: FamilyMember1.body.id,
+        spouse2Id: FamilyMember2.body.id,
+      });
 
     // retrieve Household and its family members
     const retrieveHouseholdResponse = await request(app)
@@ -116,6 +119,16 @@ describe("setCoupleAsMarried endpoint sets spouseIds and maritalStatuses", () =>
     // assert that married couple have each other's IDs as spouseIds
     expect(setCoupleAsMarriedResponse.statusCode).toBe(200);
     expect(retrieveHouseholdResponse.statusCode).toBe(200);
+    expect(retrieveHouseholdResponse.body.FamilyMembers.length).toBe(2);
+    expect(retrieveHouseholdResponse.body.FamilyMembers[0].maritalStatus).toBe(
+      "Married"
+    );
+    expect(retrieveHouseholdResponse.body.FamilyMembers[0].spouseId).toBe(
+      FamilyMember2.body.id
+    );
+    expect(retrieveHouseholdResponse.body.FamilyMembers[1].spouseId).toBe(
+      FamilyMember1.body.id
+    );
   });
 });
 
@@ -170,9 +183,9 @@ describe("setParentsForChild endpoint sets parent1 and parent2 IDs in child's fa
     const setParentsForChildResponse = await request(app)
       .put("/family-members/setParentsForChild")
       .send({
-        parent1Id: Parent1.id,
-        parent2Id: Parent2.id,
-        childId: Child.id,
+        parent1Id: Parent1.body.id,
+        parent2Id: Parent2.body.id,
+        childId: Child.body.id,
       })
       .set("Accept", "application/json");
 
@@ -185,5 +198,12 @@ describe("setParentsForChild endpoint sets parent1 and parent2 IDs in child's fa
     // assert that married couple have each other's IDs as spouseIds
     expect(setParentsForChildResponse.statusCode).toBe(200);
     expect(retrieveHouseholdResponse.statusCode).toBe(200);
+    expect(retrieveHouseholdResponse.body.FamilyMembers.length).toBe(3);
+    expect(retrieveHouseholdResponse.body.FamilyMembers[2].parent1Id).toBe(
+      Parent1.body.id
+    );
+    expect(retrieveHouseholdResponse.body.FamilyMembers[2].parent2Id).toBe(
+      Parent2.body.id
+    );
   });
 });
