@@ -5,7 +5,9 @@ module.exports = (sequelize, DataTypes) => {
     {
       housingType: DataTypes.STRING,
     },
-    {}
+    {
+      paranoid: true,
+    }
   );
   Household.associate = (models) => {
     Household.hasMany(models.FamilyMember);

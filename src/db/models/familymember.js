@@ -13,7 +13,9 @@ module.exports = (sequelize, DataTypes) => {
       parent1Id: DataTypes.INTEGER,
       parent2Id: DataTypes.INTEGER,
     },
-    {}
+    {
+      paranoid: true,
+    }
   );
   FamilyMember.associate = (models) => {
     FamilyMember.belongsTo(models.Household);
