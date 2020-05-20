@@ -279,12 +279,30 @@ describe("retrieveEligibleHouseholds endpoint retrieves households eligible for 
       })
       .set("Accept", "application/json");
 
+    // set parents to married
+    await request(app)
+      .put("/family-members/setCoupleAsMarried")
+      .send({
+        spouse1Id: parent1.body.id,
+        spouse2Id: parent2.body.id,
+      })
+      .set("Accept", "application/json");
+
+    // set parents for child
+    await request(app).put("/family-members/setParentsForChild").send({
+      parent1Id: parent1.body.id,
+      parent2Id: parent2.body.id,
+      childId: child.body.id,
+    });
+
+    // check for eligible households
     const response = await request(app)
       .get("/households/retrieveEligibleHouseholds")
       .set("Accept", "application/json");
 
     // assert that response contains three family members
     expect(response.statusCode).toBe(200);
+    expect(response.body.familyTogethernessScheme.length).toBe(1);
     expect(response.body.familyTogethernessScheme[0].FamilyMembers.length).toBe(
       3
     );

@@ -82,7 +82,7 @@ const retrieveHouseholdsEligibleForStudentEncouragementBonus = async () => {
   // for each household, retrieve family members under younger than 16 years
   let studentEncouragementBonus = [];
   for (let i = 0; i < lowIncomeHouseholds.length; i++) {
-    const HouseholdId = lowIncomeHouseholds[i].dataValues.id;
+    const HouseholdId = lowIncomeHouseholds[i].id;
     const FamilyMembers = await FamilyMember.findAll({
       attributes: { exclude: ["createdAt", "updatedAt"] },
       where: {
@@ -94,7 +94,7 @@ const retrieveHouseholdsEligibleForStudentEncouragementBonus = async () => {
     if (FamilyMembers.length > 0) {
       studentEncouragementBonus.push({
         id: HouseholdId,
-        housingType: lowIncomeHouseholds[i].dataValues.housingType,
+        housingType: lowIncomeHouseholds[i].housingType,
         FamilyMembers,
       });
     }
@@ -137,7 +137,7 @@ let retrieveHouseholdsEligibleForFamilyTogethernessScheme = async () => {
     console.log(error);
   });
 
-  let householdsEligibleForFamilyTogethernessScheme = [];
+  let familyTogethernessScheme = [];
   // for every household that has children below eighteen
   for (let i = 0; i < householdsWithChildrenBelowEighteen.length; i++) {
     let parents = [];
@@ -168,7 +168,7 @@ let retrieveHouseholdsEligibleForFamilyTogethernessScheme = async () => {
       });
 
       if (parent1.spouseId == parent2.id && parent2.spouseId == parent1.id) {
-        // add child to FamilyMembers array
+        // add child to FamilyMembers array if parents live in same household
         FamilyMembers.push(
           householdsWithChildrenBelowEighteen[i].FamilyMembers[j]
         );
@@ -191,13 +191,13 @@ let retrieveHouseholdsEligibleForFamilyTogethernessScheme = async () => {
       FamilyMembers.push(retrievedParent);
     }
 
-    await householdsEligibleForFamilyTogethernessScheme.push({
+    await familyTogethernessScheme.push({
       id: HouseholdId,
       housingType: householdsWithChildrenBelowEighteen[i].housingType,
       FamilyMembers,
     });
   }
-  return householdsEligibleForFamilyTogethernessScheme;
+  return familyTogethernessScheme;
 };
 
 // search for households eligible for Elder Bonus
