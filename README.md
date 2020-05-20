@@ -7,6 +7,8 @@ This set of API endpoints allows users to:
 3. Retrieve all households and their respective family members
 4. Retrieve one household and its family members
 5. Search for households and family members eligible for various grants
+6. Soft delete a household and its family members
+7. Remove a family member from a household
 
 ## Usage
 
