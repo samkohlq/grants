@@ -8,11 +8,6 @@ This set of API endpoints allows users to:
 4. Retrieve one household and its family members
 5. Search for households and family members eligible for various grants
 
-## Built with
-
-- Express.js
-- Sequelize / PostgreSQL
-
 ## Usage
 
 #### Clone the repository
@@ -97,3 +92,8 @@ Eligibility criteria:
 - the combined household income must be less than \$100,000
 
 The response should contain all households eligible for the grant
+
+## Built with
+
+- Express.js
+- Sequelize / PostgreSQL
