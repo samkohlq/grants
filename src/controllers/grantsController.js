@@ -4,6 +4,10 @@ import { FamilyMember, Household, sequelize } from "../db/models";
 const Op = Sequelize.Op;
 
 export const retrieveEligibleHouseholds = async (req, res) => {
+  const filters = {
+    householdSize: req.query.householdSize,
+  };
+
   let eligibleHouseholds = {
     studentEncouragementBonus: null,
     familyTogethernessScheme: null,
@@ -11,19 +15,47 @@ export const retrieveEligibleHouseholds = async (req, res) => {
     babySunshineGrant: null,
     yoloGstGrant: null,
   };
+
   const studentEncouragementBonus = await retrieveHouseholdsEligibleForStudentEncouragementBonus();
   const familyTogethernessScheme = await retrieveHouseholdsEligibleForFamilyTogethernessScheme();
   const elderBonus = await retrieveHouseholdsEligibleForElderBonus();
   const babySunshineGrant = await retrieveHouseholdsEligibleForBabySunshineGrant();
   const yoloGstGrant = await retrieveHouseholdsEligibleForYoloGstGrant();
 
-  eligibleHouseholds.studentEncouragementBonus = studentEncouragementBonus;
-  eligibleHouseholds.familyTogethernessScheme = familyTogethernessScheme;
-  eligibleHouseholds.elderBonus = elderBonus;
-  eligibleHouseholds.babySunshineGrant = babySunshineGrant;
-  eligibleHouseholds.yoloGstGrant = yoloGstGrant;
+  eligibleHouseholds.studentEncouragementBonus = await filterResult(
+    studentEncouragementBonus,
+    filters
+  );
+  eligibleHouseholds.familyTogethernessScheme = await filterResult(
+    familyTogethernessScheme,
+    filters
+  );
+  eligibleHouseholds.elderBonus = await filterResult(elderBonus, filters);
+  eligibleHouseholds.babySunshineGrant = await filterResult(
+    babySunshineGrant,
+    filters
+  );
+  eligibleHouseholds.yoloGstGrant = await filterResult(yoloGstGrant, filters);
 
   res.send(eligibleHouseholds);
+};
+
+const filterResult = async (arrayToFilter, filters) => {
+  let filteredArray = [];
+  if (filters.householdSize) {
+    // go through households and check for each household's size
+    for (let i = 0; i < arrayToFilter.length; i++) {
+      const HouseholdId = arrayToFilter[i].id;
+      const familyMembers = await FamilyMember.findAll({
+        where: { HouseholdId: HouseholdId },
+      });
+      if (familyMembers.length == filters.householdSize) {
+        filteredArray.push(arrayToFilter[i]);
+      }
+    }
+    return filteredArray;
+  }
+  return arrayToFilter;
 };
 
 // search for households eligible for Student Encouragement Bonus
